@@ -16,3 +16,11 @@ func TestTicTacToeInvalid(t *testing.T) {
 	if !g.MakeMove(0) { t.Fatal("first move invalid") }
 	if g.MakeMove(0) { t.Fatal("should not allow overwrite") }
 }
+
+func TestOptimalAIMoveGeneration(t *testing.T) {
+	g := NewTicTacToe(true, "optimal")
+	// Human plays a corner, AI should respond optimally (usually center)
+	if !g.MakeMove(0) { t.Fatal("human corner move failed") }
+	if g.Board[4] == "" { t.Fatalf("expected AI to take center optimally, board: %+v", g.Board) }
+	if g.Winner != "" { t.Fatalf("game should not be over early, winner=%s", g.Winner) }
+}

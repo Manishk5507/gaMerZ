@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -22,14 +24,43 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	allowedOrigins := []string{"http://localhost:5173"}
+	if ao := os.Getenv("ALLOWED_ORIGINS"); ao != "" { // comma separated override
+		allowedOrigins = strings.Split(ao, ",")
+	}
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		AllowCredentials: true,
 	})
 
 	r.Mount("/api", httpapi.NewRouter())
+
+	// Serve built frontend (SPA) if dist directory exists. FRONTEND_DIR env can override.
+	distDir := os.Getenv("FRONTEND_DIR")
+	if distDir == "" { distDir = filepath.Join("..", "frontend", "dist") }
+	if info, err := os.Stat(distDir); err == nil && info.IsDir() {
+		log.Printf("serving frontend from %s", distDir)
+		r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+			// Let /api/* be handled by mounted router (shouldn't reach here, but guard anyway)
+			if strings.HasPrefix(r.URL.Path, "/api/") { http.NotFound(w, r); return }
+			// Map path to file inside dist; fallback to index.html for SPA routes
+			reqPath := r.URL.Path
+			if reqPath == "/" { reqPath = "/index.html" }
+			// Prevent directory traversal
+			safe := filepath.Clean(strings.TrimPrefix(reqPath, "/"))
+			filePath := filepath.Join(distDir, safe)
+			if fi, err := os.Stat(filePath); err == nil && !fi.IsDir() {
+				http.ServeFile(w, r, filePath)
+				return
+			}
+			// Fallback to index.html
+			http.ServeFile(w, r, filepath.Join(distDir, "index.html"))
+		})
+	} else {
+		log.Printf("frontend dist dir not found, skipping static serve: %s", distDir)
+	}
 
 	handler := c.Handler(r)
 

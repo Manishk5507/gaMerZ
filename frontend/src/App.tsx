@@ -41,7 +41,7 @@ export const App: React.FC = () => {
     document.documentElement.style.setProperty('--app-scale', scale.toString());
   }, [scale]);
 
-  const startGame = async (id: string) => {
+  const startGame = useCallback(async (id: string) => {
     let body: any = undefined;
     if (id === 'tictactoe') {
       body = { vsAI: tttVsAI, difficulty: tttDifficulty };
@@ -50,7 +50,19 @@ export const App: React.FC = () => {
     const data = await res.json();
     setActive({ type: id as any, gameId: data.gameId });
     setShowTTTDialog(false);
-  };
+  }, [tttVsAI, tttDifficulty]);
+
+  // Listen for in-game request to start a new vs AI match
+  useEffect(() => {
+    const handler = () => {
+      setTttVsAI(true); // ensure AI mode
+      // keep existing difficulty or default to optimal if currently not vs AI
+      setTttDifficulty(d => d || 'optimal');
+      startGame('tictactoe');
+    };
+    window.addEventListener('ttt:newAI', handler as EventListener);
+    return () => window.removeEventListener('ttt:newAI', handler as EventListener);
+  }, [startGame]);
 
   const leaveGame = () => setActive(null);
 
