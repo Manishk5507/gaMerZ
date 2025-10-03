@@ -25,6 +25,11 @@ export const NumberGuess: React.FC<Props> = ({ gameId, onExit }) => {
     if (res.ok) setState(await res.json());
   };
 
+  const reset = async () => {
+    const res = await fetch(`/api/games/numberguess/${gameId}/reset`, { method: 'POST' });
+    if (res.ok) { setState(await res.json()); setInput(''); }
+  };
+
   useEffect(() => { refresh(); }, []);
 
   return (
@@ -32,7 +37,8 @@ export const NumberGuess: React.FC<Props> = ({ gameId, onExit }) => {
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-semibold tracking-tight heading-gradient">Number Guess</h2>
         {state?.won && <span className="text-xs px-2 py-1 rounded bg-emerald-600/20 text-emerald-300 border border-emerald-600/40">Completed</span>}
-        <button onClick={() => setShowRules(s=>!s)} className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 transition ml-auto">{showRules ? 'Hide Rules' : 'Show Rules'}</button>
+  <button onClick={reset} className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 transition">Reset</button>
+  <button onClick={() => setShowRules(s=>!s)} className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 transition ml-auto">{showRules ? 'Hide Rules' : 'Show Rules'}</button>
         <button onClick={onExit} className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 transition">Exit</button>
       </div>
       <div className="flex items-center gap-3">

@@ -36,7 +36,9 @@ frontend/
 
 ## Current Games
 - Tic Tac Toe (vs AI easy / optimal)
-- Number Guess (difficulty ranges: easy 1-50, normal 1-100, hard 1-500, insane 1-1000)
+- Number Guess (ranges: easy 1-50, normal 1-100, hard 1-500, insane 1-1000)
+- Rock Paper Scissors (target score configurable)
+- Hangman (easy / normal / hard)
 
 ## API (summary)
 Health: GET /api/health -> ok
@@ -51,6 +53,16 @@ Number Guess:
 - POST /api/games/numberguess/new { difficulty? } -> { gameId, state }
 - GET  /api/games/numberguess/{id} -> state
 - POST /api/games/numberguess/{id}/guess { n }
+
+Rock Paper Scissors:
+- POST /api/games/rps/new { target? } -> { gameId, state }
+- GET  /api/games/rps/{id} -> state
+- POST /api/games/rps/{id}/play { move }
+
+Hangman:
+- POST /api/games/hangman/new { difficulty? } -> { gameId, state }
+- GET  /api/games/hangman/{id} -> state
+- POST /api/games/hangman/{id}/guess { letter }
 
 ## Suggested Commit Sequence
 1. chore: scaffold project structure

@@ -55,3 +55,16 @@ func (g *NumberGuess) Guess(n int) {
 		g.Hint = "lower"
 	}
 }
+
+// Reset starts a fresh round with a new secret but same difficulty & range.
+func (g *NumberGuess) Reset() {
+	if g.Max == 0 { // safety for legacy
+		g.Max = 100
+		if g.Difficulty == "" { g.Difficulty = "normal" }
+	}
+	g.Secret = rand.Intn(g.Max) + 1
+	g.Tries = 0
+	g.Last = 0
+	g.Hint = ""
+	g.Won = false
+}

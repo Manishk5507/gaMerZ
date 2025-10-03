@@ -1,13 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { TicTacToe } from './components/games/TicTacToe';
 import { NumberGuess } from './components/games/NumberGuess';
+import { RockPaperScissors } from './components/games/RockPaperScissors';
+import { Hangman } from './components/games/Hangman';
 import { PuzzlePieceIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { LandingPage } from './components/LandingPage';
 import { Background3D } from './components/Background3D';
 
 interface GameMeta { id: string; name: string }
 
-type ActiveGame = { type: 'tictactoe'; gameId: string } | { type: 'numberguess'; gameId: string } | null;
+type ActiveGame =
+  | { type: 'tictactoe'; gameId: string }
+  | { type: 'numberguess'; gameId: string }
+  | { type: 'rps'; gameId: string }
+  | { type: 'hangman'; gameId: string }
+  | null;
 
 export const App: React.FC = () => {
   const [games, setGames] = useState<GameMeta[]>([]);
@@ -19,6 +26,10 @@ export const App: React.FC = () => {
   const [tttDifficulty, setTttDifficulty] = useState<'easy'|'optimal'>('easy');
   const [showNumDialog, setShowNumDialog] = useState(false);
   const [numDifficulty, setNumDifficulty] = useState<'easy'|'normal'|'hard'|'insane'>('normal');
+  const [showRPSDialog, setShowRPSDialog] = useState(false);
+  const [rpsTarget, setRpsTarget] = useState(3);
+  const [showHangDialog, setShowHangDialog] = useState(false);
+  const [hangDifficulty, setHangDifficulty] = useState<'easy'|'normal'|'hard'>('normal');
 
   useEffect(() => {
     if (!entered) return; // Load games only after entering
@@ -47,11 +58,15 @@ export const App: React.FC = () => {
     let body: any = undefined;
   if (id === 'tictactoe') body = { vsAI: tttVsAI, difficulty: tttDifficulty };
   if (id === 'numberguess') body = { difficulty: numDifficulty };
+  if (id === 'rps') body = { target: rpsTarget };
+  if (id === 'hangman') body = { difficulty: hangDifficulty };
     const res = await fetch(`/api/games/${id}/new`, { method: 'POST', headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
     const data = await res.json();
     setActive({ type: id as any, gameId: data.gameId });
     setShowTTTDialog(false);
   setShowNumDialog(false);
+  setShowRPSDialog(false);
+  setShowHangDialog(false);
   }, [tttVsAI, tttDifficulty]);
 
   // Listen for in-game request to start a new vs AI match
@@ -111,14 +126,26 @@ export const App: React.FC = () => {
                     <h3 className="text-lg font-semibold text-slate-100 mb-2">{g.name}</h3>
                     <p className="text-xs text-slate-400 mb-4">{g.id === 'tictactoe' ? 'Classic 3x3 strategy.' : 'Guess the hidden number.'}</p>
                   </div>
-                  <button onClick={() => g.id === 'tictactoe' ? setShowTTTDialog(true) : g.id === 'numberguess' ? setShowNumDialog(true) : startGame(g.id)} className="btn-primary w-full mt-auto">Play</button>
+                  <button
+                    onClick={() => g.id === 'tictactoe'
+                      ? setShowTTTDialog(true)
+                      : g.id === 'numberguess'
+                        ? setShowNumDialog(true)
+                        : g.id === 'rps'
+                          ? setShowRPSDialog(true)
+                          : g.id === 'hangman'
+                            ? setShowHangDialog(true)
+                            : startGame(g.id)}
+                    className="btn-primary w-full mt-auto">Play</button>
                 </li>
               ))}
             </ul>
           </div>
         )}
         {active?.type === 'tictactoe' && <div className="card max-w-md mx-auto"><TicTacToe gameId={active.gameId} onExit={leaveGame} /></div>}
-        {active?.type === 'numberguess' && <div className="card max-w-md mx-auto"><NumberGuess gameId={active.gameId} onExit={leaveGame} /></div>}
+  {active?.type === 'numberguess' && <div className="card max-w-md mx-auto"><NumberGuess gameId={active.gameId} onExit={leaveGame} /></div>}
+  {active?.type === 'rps' && <div className="card max-w-md mx-auto"><RockPaperScissors gameId={active.gameId} onExit={leaveGame} /></div>}
+  {active?.type === 'hangman' && <div className="card max-w-xl mx-auto"><Hangman gameId={active.gameId} onExit={leaveGame} /></div>}
       </main>
       <footer className="py-6 text-center text-xs text-slate-600 relative">© {new Date().getFullYear()} gaMerZ. Built with Go & React.</footer>
       {showTTTDialog && (
@@ -175,6 +202,55 @@ export const App: React.FC = () => {
             <div className="flex gap-2 pt-2">
               <button onClick={()=>startGame('numberguess')} className="btn-primary flex-1">Start</button>
               <button onClick={()=>setShowNumDialog(false)} className="flex-1 text-xs px-3 py-2 rounded-md border border-slate-700 bg-slate-800 hover:bg-slate-700 transition">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showRPSDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-lg border border-slate-800 bg-slate-900/80 p-5 space-y-5 shadow-xl">
+            <div>
+              <h3 className="text-lg font-semibold heading-gradient mb-1">Start Rock Paper Scissors</h3>
+              <p className="text-xs text-slate-400">Set target score to win.</p>
+            </div>
+            <div className="space-y-3 text-sm">
+              <label className="block text-xs uppercase tracking-wide text-slate-400">Target Score</label>
+              <div className="flex gap-2">
+                {[3,5,7].map(t => (
+                  <button key={t} onClick={()=>setRpsTarget(t)} className={`px-3 py-2 rounded-md border text-xs font-medium transition ${rpsTarget===t? 'border-indigo-500 bg-indigo-600/30 text-indigo-200':'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300'}`}>{t}</button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={()=>startGame('rps')} className="btn-primary flex-1">Start</button>
+              <button onClick={()=>setShowRPSDialog(false)} className="flex-1 text-xs px-3 py-2 rounded-md border border-slate-700 bg-slate-800 hover:bg-slate-700 transition">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showHangDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-lg border border-slate-800 bg-slate-900/80 p-5 space-y-5 shadow-xl">
+            <div>
+              <h3 className="text-lg font-semibold heading-gradient mb-1">Start Hangman</h3>
+              <p className="text-xs text-slate-400">Choose difficulty.</p>
+            </div>
+            <div className="space-y-3 text-sm">
+              <label className="block text-xs uppercase tracking-wide text-slate-400">Difficulty</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['easy','normal','hard'] as const).map(d => (
+                  <button key={d} onClick={()=>setHangDifficulty(d)} className={`px-3 py-2 rounded-md border text-xs font-medium transition ${hangDifficulty===d? 'border-indigo-500 bg-indigo-600/30 text-indigo-200':'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300'}`}>{d}</button>
+                ))}
+              </div>
+              <div className="text-[10px] text-slate-400 grid gap-1">
+                <span><strong>easy</strong>: short words, more mistakes</span>
+                <span><strong>normal</strong>: medium words</span>
+                <span><strong>hard</strong>: long words, fewer mistakes</span>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={()=>startGame('hangman')} className="btn-primary flex-1">Start</button>
+              <button onClick={()=>setShowHangDialog(false)} className="flex-1 text-xs px-3 py-2 rounded-md border border-slate-700 bg-slate-800 hover:bg-slate-700 transition">Cancel</button>
             </div>
           </div>
         </div>

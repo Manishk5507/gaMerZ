@@ -18,10 +18,14 @@ func NewRouter() http.Handler {
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 	// simple in-memory stores (not for production)
 	var (
-		muTic   sync.Mutex
-		muNum   sync.Mutex
-		ticGames = map[string]*games.TicTacToe{}
-		numGames = map[string]*games.NumberGuess{}
+		muTic    sync.Mutex
+		muNum    sync.Mutex
+		muRPS    sync.Mutex
+		muHang   sync.Mutex
+		ticGames  = map[string]*games.TicTacToe{}
+		numGames  = map[string]*games.NumberGuess{}
+		rpsGames  = map[string]*games.RPSGame{}
+		hangGames = map[string]*games.Hangman{}
 	)
 
 	r.Route("/games", func(r chi.Router) {
@@ -29,6 +33,8 @@ func NewRouter() http.Handler {
 			resp := []map[string]string{
 				{"id": "tictactoe", "name": "Tic Tac Toe"},
 				{"id": "numberguess", "name": "Number Guess"},
+				{"id": "rps", "name": "Rock Paper Scissors"},
+				{"id": "hangman", "name": "Hangman"},
 			}
 			writeJSON(w, http.StatusOK, resp)
 		})
@@ -77,15 +83,23 @@ func NewRouter() http.Handler {
 			writeJSON(w, http.StatusOK, g)
 		})
 
-		// Number guess
+		// Number Guess endpoints (clean)
 		r.Post("/numberguess/new", func(w http.ResponseWriter, r *http.Request) {
 			muNum.Lock(); defer muNum.Unlock()
 			var body struct { Difficulty string `json:"difficulty"` }
-			_ = json.NewDecoder(r.Body).Decode(&body) // optional
+			_ = json.NewDecoder(r.Body).Decode(&body)
 			id := randID()
 			g := games.NewNumberGuess(body.Difficulty)
 			numGames[id] = g
 			writeJSON(w, http.StatusCreated, map[string]any{"gameId": id, "state": g})
+		})
+		r.Post("/numberguess/{id}/reset", func(w http.ResponseWriter, r *http.Request) {
+			id := chi.URLParam(r, "id")
+			muNum.Lock(); defer muNum.Unlock()
+			g, ok := numGames[id]
+			if !ok { http.NotFound(w, r); return }
+			g.Reset()
+			writeJSON(w, http.StatusOK, g)
 		})
 		r.Get("/numberguess/{id}", func(w http.ResponseWriter, r *http.Request) {
 			id := chi.URLParam(r, "id")
@@ -104,7 +118,79 @@ func NewRouter() http.Handler {
 			g.Guess(body.N)
 			writeJSON(w, http.StatusOK, g)
 		})
-	})
+
+		// Rock Paper Scissors endpoints (clean)
+		r.Post("/rps/new", func(w http.ResponseWriter, r *http.Request) {
+			muRPS.Lock(); defer muRPS.Unlock()
+			var body struct { Target int `json:"target"` }
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			id := randID()
+			g := games.NewRPS(body.Target)
+			rpsGames[id] = g
+			writeJSON(w, http.StatusCreated, map[string]any{"gameId": id, "state": g})
+		})
+		r.Post("/rps/{id}/reset", func(w http.ResponseWriter, r *http.Request) {
+			id := chi.URLParam(r, "id")
+			muRPS.Lock(); defer muRPS.Unlock()
+			g, ok := rpsGames[id]
+			if !ok { http.NotFound(w, r); return }
+			g.Reset()
+			writeJSON(w, http.StatusOK, g)
+		})
+		r.Get("/rps/{id}", func(w http.ResponseWriter, r *http.Request) {
+			id := chi.URLParam(r, "id")
+			muRPS.Lock(); defer muRPS.Unlock()
+			g, ok := rpsGames[id]
+			if !ok { http.NotFound(w, r); return }
+			writeJSON(w, http.StatusOK, g)
+		})
+		r.Post("/rps/{id}/play", func(w http.ResponseWriter, r *http.Request) {
+			id := chi.URLParam(r, "id")
+			muRPS.Lock(); defer muRPS.Unlock()
+			g, ok := rpsGames[id]
+			if !ok { http.NotFound(w, r); return }
+			var body struct { Move string `json:"move"` }
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil { writeErr(w, http.StatusBadRequest, "invalid body"); return }
+			g.Play(body.Move)
+			writeJSON(w, http.StatusOK, g)
+		})
+
+		// Hangman endpoints (clean)
+		r.Post("/hangman/new", func(w http.ResponseWriter, r *http.Request) {
+			muHang.Lock(); defer muHang.Unlock()
+			var body struct { Difficulty string `json:"difficulty"` }
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			id := randID()
+			g := games.NewHangman(body.Difficulty)
+			hangGames[id] = g
+			writeJSON(w, http.StatusCreated, map[string]any{"gameId": id, "state": g})
+		})
+		r.Post("/hangman/{id}/reset", func(w http.ResponseWriter, r *http.Request) {
+			id := chi.URLParam(r, "id")
+			muHang.Lock(); defer muHang.Unlock()
+			g, ok := hangGames[id]
+			if !ok { http.NotFound(w, r); return }
+			g.Reset()
+			writeJSON(w, http.StatusOK, g)
+		})
+		r.Get("/hangman/{id}", func(w http.ResponseWriter, r *http.Request) {
+			id := chi.URLParam(r, "id")
+			muHang.Lock(); defer muHang.Unlock()
+			g, ok := hangGames[id]
+			if !ok { http.NotFound(w, r); return }
+			writeJSON(w, http.StatusOK, g)
+		})
+		r.Post("/hangman/{id}/guess", func(w http.ResponseWriter, r *http.Request) {
+			id := chi.URLParam(r, "id")
+			muHang.Lock(); defer muHang.Unlock()
+			g, ok := hangGames[id]
+			if !ok { http.NotFound(w, r); return }
+			var body struct { Letter string `json:"letter"` }
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil { writeErr(w, http.StatusBadRequest, "invalid body"); return }
+			g.Guess(body.Letter)
+			writeJSON(w, http.StatusOK, g)
+		})
+    }) // end /games route group
 
 	return r
 }
