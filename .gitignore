@@ -1,0 +1,25 @@
+# Global
+.DS_Store
+node_modules/
+.env
+*.log
+/dist
+/build
+coverage/
+.tmp
+
+# Go
+/backend/bin
+/backend/tmp
+/backend/coverage
+/backend/*.test
+# (keep go.sum tracked for module integrity)
+
+# Frontend
+/frontend/node_modules
+/frontend/dist
+/frontend/.vite
+
+# IDE
+.vscode/
+.idea/
