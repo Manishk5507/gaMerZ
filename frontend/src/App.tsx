@@ -17,6 +17,8 @@ export const App: React.FC = () => {
   const [showTTTDialog, setShowTTTDialog] = useState(false);
   const [tttVsAI, setTttVsAI] = useState(true);
   const [tttDifficulty, setTttDifficulty] = useState<'easy'|'optimal'>('easy');
+  const [showNumDialog, setShowNumDialog] = useState(false);
+  const [numDifficulty, setNumDifficulty] = useState<'easy'|'normal'|'hard'|'insane'>('normal');
 
   useEffect(() => {
     if (!entered) return; // Load games only after entering
@@ -43,13 +45,13 @@ export const App: React.FC = () => {
 
   const startGame = useCallback(async (id: string) => {
     let body: any = undefined;
-    if (id === 'tictactoe') {
-      body = { vsAI: tttVsAI, difficulty: tttDifficulty };
-    }
+  if (id === 'tictactoe') body = { vsAI: tttVsAI, difficulty: tttDifficulty };
+  if (id === 'numberguess') body = { difficulty: numDifficulty };
     const res = await fetch(`/api/games/${id}/new`, { method: 'POST', headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
     const data = await res.json();
     setActive({ type: id as any, gameId: data.gameId });
     setShowTTTDialog(false);
+  setShowNumDialog(false);
   }, [tttVsAI, tttDifficulty]);
 
   // Listen for in-game request to start a new vs AI match
@@ -71,8 +73,14 @@ export const App: React.FC = () => {
       <Background3D />
       <header className="border-b border-slate-800 bg-slate-900/70 backdrop-blur supports-[backdrop-filter]:bg-slate-900/50">
         <div className="mx-auto max-w-5xl px-4 py-4 flex items-center gap-3">
-          <PuzzlePieceIcon className="h-8 w-8 text-indigo-400" />
-          <h1 className="text-2xl font-semibold tracking-tight heading-gradient">gaMerZ</h1>
+          <button
+            onClick={() => { setActive(null); setEntered(false); }}
+            className="flex items-center gap-2 group focus:outline-none focus-visible:ring-2 ring-indigo-500 rounded px-1 -ml-1"
+            aria-label="Go to homepage"
+          >
+            <PuzzlePieceIcon className="h-8 w-8 text-indigo-400 group-hover:scale-110 transition-transform" />
+            <h1 className="text-2xl font-semibold tracking-tight heading-gradient group-hover:opacity-90">gaMerZ</h1>
+          </button>
           {active && (
             <button onClick={leaveGame} className="ml-auto inline-flex items-center gap-1 text-sm text-slate-300 hover:text-white transition">
               <ArrowLeftIcon className="h-4 w-4" /> Back
@@ -103,7 +111,7 @@ export const App: React.FC = () => {
                     <h3 className="text-lg font-semibold text-slate-100 mb-2">{g.name}</h3>
                     <p className="text-xs text-slate-400 mb-4">{g.id === 'tictactoe' ? 'Classic 3x3 strategy.' : 'Guess the hidden number.'}</p>
                   </div>
-                  <button onClick={() => g.id === 'tictactoe' ? setShowTTTDialog(true) : startGame(g.id)} className="btn-primary w-full mt-auto">Play</button>
+                  <button onClick={() => g.id === 'tictactoe' ? setShowTTTDialog(true) : g.id === 'numberguess' ? setShowNumDialog(true) : startGame(g.id)} className="btn-primary w-full mt-auto">Play</button>
                 </li>
               ))}
             </ul>
@@ -139,6 +147,34 @@ export const App: React.FC = () => {
             <div className="flex gap-2 pt-2">
               <button onClick={()=>startGame('tictactoe')} className="btn-primary flex-1">Start</button>
               <button onClick={()=>setShowTTTDialog(false)} className="flex-1 text-xs px-3 py-2 rounded-md border border-slate-700 bg-slate-800 hover:bg-slate-700 transition">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showNumDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-lg border border-slate-800 bg-slate-900/80 p-5 space-y-5 shadow-xl">
+            <div>
+              <h3 className="text-lg font-semibold heading-gradient mb-1">Start Number Guess</h3>
+              <p className="text-xs text-slate-400">Select difficulty (range size).</p>
+            </div>
+            <div className="space-y-3 text-sm">
+              <label className="block text-xs uppercase tracking-wide text-slate-400">Difficulty</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['easy','normal','hard','insane'] as const).map(d => (
+                  <button key={d} onClick={()=>setNumDifficulty(d)} className={`px-3 py-2 rounded-md border text-xs font-medium transition ${numDifficulty===d? 'border-indigo-500 bg-indigo-600/30 text-indigo-200':'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300'}`}>{d}</button>
+                ))}
+              </div>
+              <div className="text-[10px] text-slate-400 grid gap-1">
+                <span><strong>easy</strong>: 1–50</span>
+                <span><strong>normal</strong>: 1–100</span>
+                <span><strong>hard</strong>: 1–500</span>
+                <span><strong>insane</strong>: 1–1000</span>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={()=>startGame('numberguess')} className="btn-primary flex-1">Start</button>
+              <button onClick={()=>setShowNumDialog(false)} className="flex-1 text-xs px-3 py-2 rounded-md border border-slate-700 bg-slate-800 hover:bg-slate-700 transition">Cancel</button>
             </div>
           </div>
         </div>

@@ -80,8 +80,10 @@ func NewRouter() http.Handler {
 		// Number guess
 		r.Post("/numberguess/new", func(w http.ResponseWriter, r *http.Request) {
 			muNum.Lock(); defer muNum.Unlock()
+			var body struct { Difficulty string `json:"difficulty"` }
+			_ = json.NewDecoder(r.Body).Decode(&body) // optional
 			id := randID()
-			g := games.NewNumberGuess()
+			g := games.NewNumberGuess(body.Difficulty)
 			numGames[id] = g
 			writeJSON(w, http.StatusCreated, map[string]any{"gameId": id, "state": g})
 		})

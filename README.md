@@ -35,8 +35,8 @@ frontend/
 ```
 
 ## Current Games
-- Tic Tac Toe
-- Number Guess (1-100)
+- Tic Tac Toe (vs AI easy / optimal)
+- Number Guess (difficulty ranges: easy 1-50, normal 1-100, hard 1-500, insane 1-1000)
 
 ## API (summary)
 Health: GET /api/health -> ok
@@ -48,7 +48,7 @@ TicTacToe:
 - POST /api/games/tictactoe/{id}/move { pos }
 
 Number Guess:
-- POST /api/games/numberguess/new -> { gameId, state }
+- POST /api/games/numberguess/new { difficulty? } -> { gameId, state }
 - GET  /api/games/numberguess/{id} -> state
 - POST /api/games/numberguess/{id}/guess { n }
 
