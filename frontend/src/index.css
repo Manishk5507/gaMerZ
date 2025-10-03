@@ -4,6 +4,7 @@
   body {
     @apply bg-slate-950 text-slate-100 antialiased;
   }
+  :root { --app-scale: 1; }
 }
 
 @layer components {
@@ -56,4 +57,25 @@
   .grid-center {
     @apply grid place-items-center;
   }
+  .animate-fade-in { animation: fade-in .5s ease; }
 }
+
+@keyframes fade-in { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: translateY(0); } }
+
+/* TicTacToe enhancements */
+@layer components {
+  .ttt-board { position: relative; }
+  .ttt-cell-mark { animation: mark-pop .35s cubic-bezier(.4,1.4,.6,1); }
+  .win-line { position:absolute; inset:0; pointer-events:none; }
+  .win-line::after { content:""; position:absolute; background:linear-gradient(90deg,#6366f1,#a855f7); box-shadow:0 0 12px 2px #6366f180; border-radius:6px; }
+  .win-row-0::after { top:16.66%; left:4%; width:92%; height:6px; transform:translateY(-50%); }
+  .win-row-1::after { top:50%; left:4%; width:92%; height:6px; transform:translateY(-50%); }
+  .win-row-2::after { top:83.33%; left:4%; width:92%; height:6px; transform:translateY(-50%); }
+  .win-col-0::after { left:16.66%; top:4%; height:92%; width:6px; transform:translateX(-50%); }
+  .win-col-1::after { left:50%; top:4%; height:92%; width:6px; transform:translateX(-50%); }
+  .win-col-2::after { left:83.33%; top:4%; height:92%; width:6px; transform:translateX(-50%); }
+  .win-diag-main::after { top:50%; left:50%; width:92%; height:6px; transform:translate(-50%,-50%) rotate(45deg); transform-origin:center; }
+  .win-diag-anti::after { top:50%; left:50%; width:92%; height:6px; transform:translate(-50%,-50%) rotate(-45deg); transform-origin:center; }
+}
+
+@keyframes mark-pop { 0% { transform:scale(.2) rotate(-20deg); opacity:0; } 55% { opacity:1; } 100% { transform:scale(1) rotate(0); opacity:1; } }

@@ -3,7 +3,7 @@ package games
 import "testing"
 
 func TestTicTacToeWin(t *testing.T) {
-	g := NewTicTacToe()
+	g := NewTicTacToe(false, "easy")
 	moves := []int{0,3,1,4,2} // X wins top row
 	for _, m := range moves {
 		if !g.MakeMove(m) { t.Fatalf("move %d rejected", m) }
@@ -12,7 +12,7 @@ func TestTicTacToeWin(t *testing.T) {
 }
 
 func TestTicTacToeInvalid(t *testing.T) {
-	g := NewTicTacToe()
+	g := NewTicTacToe(false, "easy")
 	if !g.MakeMove(0) { t.Fatal("first move invalid") }
 	if g.MakeMove(0) { t.Fatal("should not allow overwrite") }
 }

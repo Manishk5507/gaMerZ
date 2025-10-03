@@ -36,8 +36,10 @@ func NewRouter() http.Handler {
 		// TicTacToe endpoints
 		r.Post("/tictactoe/new", func(w http.ResponseWriter, r *http.Request) {
 			muTic.Lock(); defer muTic.Unlock()
+			var body struct { VsAI bool `json:"vsAI"`; Difficulty string `json:"difficulty"` }
+			_ = json.NewDecoder(r.Body).Decode(&body) // optional body
 			id := randID()
-			g := games.NewTicTacToe()
+			g := games.NewTicTacToe(body.VsAI, body.Difficulty)
 			ticGames[id] = g
 			writeJSON(w, http.StatusCreated, map[string]any{"gameId": id, "state": g})
 		})
@@ -56,6 +58,22 @@ func NewRouter() http.Handler {
 			var body struct { Pos int `json:"pos"` }
 			if err := json.NewDecoder(r.Body).Decode(&body); err != nil { writeErr(w, http.StatusBadRequest, "invalid body"); return }
 			if !g.MakeMove(body.Pos) { writeErr(w, http.StatusBadRequest, "invalid move"); return }
+			writeJSON(w, http.StatusOK, g)
+		})
+		r.Post("/tictactoe/{id}/reset", func(w http.ResponseWriter, r *http.Request) {
+			id := chi.URLParam(r, "id")
+			muTic.Lock(); defer muTic.Unlock()
+			g, ok := ticGames[id]
+			if !ok { http.NotFound(w, r); return }
+			g.Reset()
+			writeJSON(w, http.StatusOK, g)
+		})
+		r.Post("/tictactoe/{id}/undo", func(w http.ResponseWriter, r *http.Request) {
+			id := chi.URLParam(r, "id")
+			muTic.Lock(); defer muTic.Unlock()
+			g, ok := ticGames[id]
+			if !ok { http.NotFound(w, r); return }
+			if !g.Undo() { writeErr(w, http.StatusBadRequest, "cannot undo"); return }
 			writeJSON(w, http.StatusOK, g)
 		})
 
